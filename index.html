@@ -16,19 +16,52 @@
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
             --spoiler-bg: #3a3a3a;
-            --blockquote-bg: #202020;
+            --blockquote-bg: #202020; /* Фон для цитаты */
             --blockquote-border: #4a4a4a;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
         pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
         .error { color: #ff6b6b; border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; }
-        blockquote { background-color: var(--blockquote-bg); border-left: 4px solid var(--blockquote-border); padding: 10px 20px; margin: 1.5em 10px; color: #d0d0d0; }
-        blockquote p { margin: 0; }
+
+        /* --- ОБНОВЛЕНО: Стили для цитат --- */
+        blockquote {
+            background-color: var(--blockquote-bg);
+            border-left: 4px solid var(--blockquote-border);
+            padding: 10px 20px;
+            margin: 1.5em 10px;
+            color: #d0d0d0;
+        }
+        blockquote p {
+            margin: 0;
+        }
+
+        /* --- Стили для спойлера --- */
         details { border-radius: 8px; margin: 1em 0; }
-        details > summary { padding: 10px 15px; background-color: var(--spoiler-bg); border-radius: 8px; cursor: pointer; outline: none; font-weight: bold; }
-        .spoiler-content { padding: 15px; border: 1px solid var(--spoiler-bg); border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
-        .katex-display { display: block; margin: 1em 0; text-align: center; overflow-x: auto; overflow-y: hidden; }
+        details > summary {
+            padding: 10px 15px;
+            background-color: var(--spoiler-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+        .spoiler-content {
+            padding: 15px;
+            border: 1px solid var(--spoiler-bg);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* --- ОБНОВЛЕНО: Стили для KaTeX (математические формулы) --- */
+        .katex-display {
+            display: block;
+            margin: 1em 0;
+            text-align: center;
+            overflow-x: auto; /* Для обработки очень длинных формул */
+            overflow-y: hidden;
+        }
     </style>
 </head>
 <body>
@@ -44,29 +77,31 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // --- НАСТРОЙКА MARKED.JS ---
+            // --- MARKED.JS EXTENSIONS ---
             const underlineExtension = {
-                name: 'underline', level: 'inline', start(src) { return src.indexOf('++'); },
-                tokenizer(src, tokens) { const rule = /^\+\+([^\+\n]+)\+\+/; const match = rule.exec(src); if (match) { return { type: 'underline', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) }; } },
+                name: 'underline',
+                level: 'inline',
+                start(src) { return src.indexOf('++'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\+\+([^\+\n]+)\+\+/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'underline', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
+                    }
+                },
                 renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
             };
             
-            // --- ИСПРАВЛЕНИЕ: Спойлер ---
             const spoilerExtension = {
                 name: 'spoiler',
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    // Используем нежадное совпадение, чтобы захватить все до следующего '||'
-                    const rule = /^\|\|(.+?)\|\|/; 
+                    const rule = /^\|\|([^\|\n]+?)\|\|/;
                     const match = rule.exec(src);
                     if (match) {
-                        return {
-                            type: 'spoiler',
-                            raw: match[0],
-                            // Убираем .trim(), чтобы знаки препинания оставались внутри
-                            text: this.lexer.inlineTokens(match[1]) 
-                        };
+                        // ИСПРАВЛЕНИЕ: Убрано .trim() чтобы не обрезать знаки препинания
+                        return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1]) };
                     }
                 },
                 renderer(token) {
@@ -74,77 +109,91 @@
                 }
             };
 
-            marked.use({ extensions: [underlineExtension, spoilerExtension] });
-
-            // --- ОСНОВНАЯ ЛОГИКА: ЗАГРУЗКА ДАННЫХ С СЕРВЕРА ---
-            async function fetchResponse() {
-                // --- ВАЖНО: ЗАМЕНИТЕ ЭТОТ URL НА ПУБЛИЧНЫЙ АДРЕС ВАШЕГО СЕРВЕРА ---
-                const backendUrl = 'https://77.110.126.145:666/get_response'; 
-
-                if (!Telegram.WebApp.initData) {
-                     contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>Не удалось получить данные для аутентификации (initData). Попробуйте перезапустить Mini App.</p></div>`;
-                     console.error("Telegram.WebApp.initData is not available.");
-                     return;
-                }
-
-                try {
-                    const res = await fetch(backendUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ initData: Telegram.WebApp.initData })
-                    });
-
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({ detail: 'Не удалось получить текст ошибки от сервера.' }));
-                        throw new Error(`Ошибка сервера: ${res.status} - ${errorData.detail || 'Без деталей'}`);
+            // ИСПРАВЛЕНИЕ: Добавлены расширения для LaTeX, чтобы Marked.js их не трогал
+            const blockMathExtension = {
+                name: 'blockMath',
+                level: 'block',
+                start(src) { return src.indexOf('$$'); },
+                tokenizer(src) {
+                    const rule = /^\$\$([\s\S]+?)\$\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'blockMath',
+                            raw: match[0],
+                            text: match[1].trim()
+                        };
                     }
-
-                    const data = await res.json();
-
-                    if (data.markdown) {
-                        // --- ИСПРАВЛЕНИЕ: KaTeX ---
-                        // 1. Изолируем блоки с формулами перед обработкой Markdown
-                        let markdownText = data.markdown;
-                        const mathBlocks = [];
-                        // Регулярное выражение для поиска блоков $$...$$ и замены их на плейсхолдеры
-                        markdownText = markdownText.replace(/^\$\$\n?([\s\S]+?)\n?\$\$/gm, (match) => {
-                            const placeholder = `<div>%%MATH_BLOCK_${mathBlocks.length}%%</div>`;
-                            mathBlocks.push(match); // Сохраняем оригинальный блок с $$
-                            return placeholder;
-                        });
-
-                        // 2. Обрабатываем Markdown с плейсхолдерами
-                        contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
-
-                        // 3. Возвращаем блоки с формулами на место плейсхолдеров
-                        // Это нужно, чтобы marked.js не добавил <p> вокруг плейсхолдера
-                        contentDiv.innerHTML = contentDiv.innerHTML.replace(/<div>%%MATH_BLOCK_(\d+)%%<\/div>/g, (match, index) => {
-                            return mathBlocks[parseInt(index, 10)];
-                        });
-
-                        // 4. Теперь безопасно рендерим формулы с помощью KaTeX
-                        renderMathInElement(contentDiv, {
-                            delimiters: [
-                                {left: '$$', right: '$$', display: true},
-                                {left: '$', right: '$', display: false}
-                            ],
-                            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
-                        });
-
-                        // 5. Применяем подсветку синтаксиса для блоков кода
-                        document.querySelectorAll('pre code').forEach(hljs.highlightElement);
-
-                    } else {
-                         throw new Error("Ответ от сервера получен, но он не содержит необходимого поля 'markdown'.");
-                    }
-
-                } catch (e) {
-                    contentDiv.innerHTML = `<div class="error"><h3>Ошибка при загрузке данных</h3><p>Не удалось связаться с сервером для получения ответа.</p><p style="font-size: 0.8em; color: #888;">Детали: ${e.message}</p></div>`;
-                    console.error("Ошибка при получении данных с бэкенда:", e);
+                },
+                renderer(token) {
+                    return `$$${token.text}$$`;
                 }
+            };
+
+            const inlineMathExtension = {
+                name: 'inlineMath',
+                level: 'inline',
+                start(src) { return src.indexOf('$'); },
+                tokenizer(src) {
+                    // Строгая проверка, чтобы избежать ложных срабатываний на обычный текст с долларами
+                    const rule = /^\$((?:\\.|[^$])+)\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'inlineMath',
+                            raw: match[0],
+                            text: match[1].trim()
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `$${token.text}$`;
+                }
+            };
+
+            marked.use({ extensions: [underlineExtension, spoilerExtension, blockMathExtension, inlineMathExtension] });
+            // --- END OF EXTENSIONS ---
+
+            function b64DecodeUnicode(str) {
+                const binaryString = atob(str.replace(/ /g, '+'));
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
             }
 
-            fetchResponse();
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataFromUrl = urlParams.get('data');
+
+                if (!dataFromUrl) {
+                    throw new Error("Параметр 'data' не найден в URL.");
+                }
+
+                const decodedData = decodeURIComponent(dataFromUrl);
+                const markdownText = b64DecodeUnicode(decodedData);
+                
+                contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
+                
+                // ОБНОВЛЕНО: Добавлены ignoredTags для лучшей обработки
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    // Добавляем pre и code, чтобы KaTeX не пытался рендерить формулы внутри блоков кода
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+                });
+
+                document.querySelectorAll('pre code').forEach(hljs.highlightElement);
+
+            } catch (e) {
+                contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>${e.message}</p></div>`;
+                console.error("Ошибка Mini App:", e);
+            }
+
             Telegram.WebApp.expand();
         });
     </script>
