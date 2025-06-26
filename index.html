@@ -5,27 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroSkull - Ответ</title>
     
-    <!-- 1. Шрифты с Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Fira+Code&display=swap" rel="stylesheet">
-
-    <!-- 2. Стили для подсветки кода (highlight.js) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-
-    <!-- 3. Стили для математических формул (KaTeX) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIARBEGEOOfUG6VBoSxIMzaEwwu2vhdPGdpIHR4rZh7ivYo" crossorigin="anonymous">
-
-    <!-- 4. Скрипт Telegram -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- 5. Основные стили страницы -->
     <style>
         :root {
-            /* * Приложение попытается использовать тему из Telegram.
-             * Значения ниже - это красивая темная тема, которая будет использоваться,
-             * если переменные Telegram недоступны (например, при открытии в обычном браузере).
-            */
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
             --tg-hint: var(--tg-theme-hint-color, #a0a0a0);
@@ -33,201 +20,73 @@
             --tg-button: var(--tg-theme-button-color, #58a6ff);
             --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
             --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #1f1f1f);
-
-            --border-radius-main: 12px;
-            --border-radius-small: 8px;
         }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-bg);
-            color: var(--tg-text);
-            padding: 20px 15px;
-            margin: 0;
-            line-height: 1.7;
-            font-size: 16px;
-            overflow-y: scroll;
-        }
-
-        #content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-            line-height: 1.3;
-            margin-top: 2em;
-            margin-bottom: 0.8em;
-            font-weight: 700;
-        }
-
-        h1 { font-size: 2.2em; border-bottom: 1px solid var(--tg-secondary-bg); padding-bottom: 0.3em; }
-        h2 { font-size: 1.8em; border-bottom: 1px solid var(--tg-secondary-bg); padding-bottom: 0.3em; }
-        h3 { font-size: 1.4em; }
-
-        p {
-            margin-bottom: 1em;
-        }
-
-        a {
-            color: var(--tg-link);
-            text-decoration: none;
-            transition: opacity 0.2s ease;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Стили для кода */
-        div.code-block-wrapper {
-            position: relative;
-            margin: 2em 0;
-        }
-        
-        pre {
-            margin: 0;
-        }
-
-        pre code.hljs {
-            border-radius: var(--border-radius-main);
-            padding: 20px;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-        }
-        
-        .copy-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: none;
-            padding: 6px 10px;
-            border-radius: var(--border-radius-small);
-            cursor: pointer;
-            font-size: 12px;
-            font-family: 'Inter', sans-serif;
-            opacity: 0.5;
-            transition: all 0.2s ease;
-        }
-        .copy-button:hover {
-            opacity: 1;
-        }
-        .copy-button:active {
-            transform: scale(0.95);
-        }
-
-        code:not(pre > code) {
-            background-color: var(--tg-secondary-bg);
-            color: var(--tg-text);
-            padding: 3px 6px;
-            border-radius: var(--border-radius-small);
-            font-family: 'Fira Code', monospace;
-            font-size: 0.9em;
-        }
-        
-        blockquote {
-            border-left: 3px solid var(--tg-link);
-            padding-left: 20px;
-            margin: 2em 0;
-            color: var(--tg-hint);
-        }
-
-        ul, ol {
-            padding-left: 25px;
-            margin-bottom: 1em;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2em 0;
-        }
-        th, td {
-            border: 1px solid var(--tg-secondary-bg);
-            padding: 12px 15px;
-            text-align: left;
-        }
-        th {
-            background-color: var(--tg-secondary-bg);
-        }
-        
-        .katex-display {
-            padding: 1em 0;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; font-size: 16px; }
+        #content { max-width: 800px; margin: 0 auto; }
+        /* ... прочие стили ... */
+        pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
+        blockquote { border-left: 3px solid var(--tg-link); padding-left: 20px; margin: 2em 0; color: var(--tg-hint); }
+        h1, h2, h3, h4, h5, h6 { line-height: 1.3; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 700; }
+        .code-block-wrapper { position: relative; margin: 1.5em 0; }
+        .copy-button { position: absolute; top: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.1); color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; opacity: 0.5; transition: all 0.2s ease; }
+        .copy-button:hover { opacity: 1; }
     </style>
 </head>
 <body>
 
     <div id="content"><div class="loader">Загрузка...</div></div>
 
-    <!-- 6. Библиотеки для парсинга и рендеринга -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
-    <!-- 7. Основной скрипт приложения -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             Telegram.WebApp.ready();
-
             const contentDiv = document.getElementById('content');
+
+            /**
+             * Функция для правильного декодирования Base64 в UTF-8 строку.
+             * Это исправляет проблему с "кракозябрами".
+             */
+            function b64DecodeUnicode(str) {
+                const binaryString = atob(str);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
+            }
 
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const encodedData = urlParams.get('data');
+                // get() автоматически URL-декодирует значение
+                const dataFromUrl = urlParams.get('data');
 
-                if (encodedData) {
-                    const markdownText = atob(encodedData);
+                if (dataFromUrl) {
+                    // ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ДЕКОДИРОВАНИЯ
+                    const markdownText = b64DecodeUnicode(dataFromUrl);
                     
                     contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                     
-                    renderMathInElement(contentDiv, {
-                        delimiters: [
-                            {left: '$$', right: '$$', display: true},
-                            {left: '$', right: '$', display: false},
-                            {left: '\\(', right: '\\)', display: false},
-                            {left: '\\[', right: '\\]', display: true}
-                        ],
-                        throwOnError : false
-                    });
-                    
+                    // Запускаем рендеринг математики и подсветку кода
+                    renderMathInElement(contentDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });
                     document.querySelectorAll('pre code').forEach((block) => {
-                        const wrapper = document.createElement('div');
+                         const wrapper = document.createElement('div');
                         wrapper.className = 'code-block-wrapper';
-                        
                         const preElement = block.parentNode;
                         preElement.parentNode.insertBefore(wrapper, preElement);
                         wrapper.appendChild(preElement);
-
-                        const copyButton = document.createElement('button');
-                        copyButton.className = 'copy-button';
-                        copyButton.textContent = 'Копировать';
-                        copyButton.onclick = () => {
-                            navigator.clipboard.writeText(block.innerText).then(() => {
-                                copyButton.textContent = 'Скопировано!';
-                                setTimeout(() => {
-                                    copyButton.textContent = 'Копировать';
-                                }, 2000);
-                            }).catch(err => {
-                                console.error('Ошибка копирования:', err);
-                                copyButton.textContent = 'Ошибка';
-                            });
-                        };
-                        
-                        wrapper.appendChild(copyButton);
                         hljs.highlightElement(block);
                     });
-
                 } else {
-                    contentDiv.innerText = "Ответ не найден. Попробуйте снова.";
+                    contentDiv.innerText = "Ошибка: параметр 'data' не найден в URL.";
                 }
+
             } catch (e) {
-                console.error("Ошибка инициализации:", e);
-                contentDiv.innerText = "Произошла ошибка при отображении ответа.";
+                contentDiv.innerHTML = `<h3>Произошла ошибка при обработке данных</h3><p><strong>Сообщение:</strong> ${e.message}</p>`;
             }
 
             Telegram.WebApp.expand();
