@@ -16,27 +16,52 @@
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
             --spoiler-bg: #3a3a3a;
-            --blockquote-bg: #2a2a2e;
-            --blockquote-border: #007bff;
+            --blockquote-bg: #202020; /* Фон для цитаты */
+            --blockquote-border: #4a4a4a;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
         pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
         .error { color: #ff6b6b; border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; }
 
+        /* --- ОБНОВЛЕНО: Стили для цитат --- */
         blockquote {
             background-color: var(--blockquote-bg);
-            border-left: 5px solid var(--blockquote-border);
-            padding: 15px 20px;
-            margin: 1.5em 0;
-            color: #e5e5e5;
-            border-radius: 0 8px 8px 0;
+            border-left: 4px solid var(--blockquote-border);
+            padding: 10px 20px;
+            margin: 1.5em 10px;
+            color: #d0d0d0;
         }
-        blockquote p:last-child { margin-bottom: 0; }
+        blockquote p {
+            margin: 0;
+        }
+
+        /* --- Стили для спойлера --- */
         details { border-radius: 8px; margin: 1em 0; }
-        details > summary { padding: 10px 15px; background-color: var(--spoiler-bg); border-radius: 8px; cursor: pointer; outline: none; font-weight: bold; }
-        .spoiler-content { padding: 15px; border: 1px solid var(--spoiler-bg); border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
-        .katex-display { display: block; margin: 1em 0; text-align: center; overflow-x: auto; overflow-y: hidden; }
+        details > summary {
+            padding: 10px 15px;
+            background-color: var(--spoiler-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+        .spoiler-content {
+            padding: 15px;
+            border: 1px solid var(--spoiler-bg);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        /* --- ОБНОВЛЕНО: Стили для KaTeX (математические формулы) --- */
+        .katex-display {
+            display: block;
+            margin: 1em 0;
+            text-align: center;
+            overflow-x: auto; /* Для обработки очень длинных формул */
+            overflow-y: hidden;
+        }
     </style>
 </head>
 <body>
@@ -52,55 +77,80 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // --- ОБНОВЛЕННЫЙ JAVASCRIPT ---
-
-            // URL вашего бэкенда. ЗАМЕНИТЕ НА СВОЙ!
-            // Например: "https://your-bot-name.fly.dev" или "https://your-ngrok-subdomain.ngrok.io"
-            const BACKEND_URL = "https://your_backend_url";
-
-            // Расширения для marked.js остаются без изменений...
-            const underlineExtension = { /*...*/ };
-            const spoilerExtension = { /*...*/ };
-            marked.use({ extensions: [underlineExtension, spoilerExtension] });
-
-            async function renderContent() {
-                try {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const dataKey = urlParams.get('data_key');
-
-                    if (!dataKey) {
-                        throw new Error("Ключ для получения данных (data_key) не найден в URL.");
+            // --- MARKED.JS EXTENSIONS ---
+            const underlineExtension = {
+                name: 'underline',
+                level: 'inline',
+                start(src) { return src.indexOf('++'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\+\+([^\+\n]+)\+\+/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'underline', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
-
-                    // Запрашиваем данные с нашего нового веб-сервера
-                    const response = await fetch(`${BACKEND_URL}/api/get_response/${dataKey}`);
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Ошибка при загрузке данных: ${errorData.error || response.statusText}`);
+                },
+                renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
+            };
+            
+            const spoilerExtension = {
+                name: 'spoiler',
+                level: 'inline',
+                start(src) { return src.indexOf('||'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\|\|([^\|\n]+)\|\|/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
-
-                    const data = await response.json();
-                    const markdownText = data.text;
-
-                    if (!markdownText) {
-                        throw new Error("Получен пустой ответ от сервера.");
-                    }
-
-                    contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
-                    
-                    renderMathInElement(contentDiv, { /* ... */ });
-                    document.querySelectorAll('pre code').forEach(hljs.highlightElement);
-
-                } catch (e) {
-                    contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>${e.message}</p><p>Возможно, сессия ответа истекла. Попробуйте сгенерировать ответ заново.</p></div>`;
-                    console.error("Ошибка Mini App:", e);
-                } finally {
-                    Telegram.WebApp.expand();
+                },
+                renderer(token) {
+                    return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`;
                 }
+            };
+
+            marked.use({ extensions: [underlineExtension, spoilerExtension] });
+            // --- END OF EXTENSIONS ---
+
+            function b64DecodeUnicode(str) {
+                const binaryString = atob(str.replace(/ /g, '+'));
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
             }
 
-            renderContent();
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataFromUrl = urlParams.get('data');
+
+                if (!dataFromUrl) {
+                    throw new Error("Параметр 'data' не найден в URL.");
+                }
+
+                const decodedData = decodeURIComponent(dataFromUrl);
+                const markdownText = b64DecodeUnicode(decodedData);
+                
+                contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
+                
+                // ОБНОВЛЕНО: Добавлены ignoredTags для лучшей обработки
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+                });
+
+                document.querySelectorAll('pre code').forEach(hljs.highlightElement);
+
+            } catch (e) {
+                contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>${e.message}</p></div>`;
+                console.error("Ошибка Mini App:", e);
+            }
+
+            Telegram.WebApp.expand();
         });
     </script>
 </body>
