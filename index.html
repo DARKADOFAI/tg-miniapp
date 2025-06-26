@@ -16,13 +16,25 @@
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
             --spoiler-bg: #3a3a3a;
+            --blockquote-bg: #202020;
+            --blockquote-border: #4a4a4a;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
         pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
         .error { color: #ff6b6b; border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; }
 
-        /* Стили для спойлера */
+        blockquote {
+            background-color: var(--blockquote-bg);
+            border-left: 4px solid var(--blockquote-border);
+            padding: 10px 20px;
+            margin: 1.5em 10px;
+            color: #d0d0d0;
+        }
+        blockquote p {
+            margin: 0;
+        }
+
         details { border-radius: 8px; margin: 1em 0; }
         details > summary {
             padding: 10px 15px;
@@ -38,6 +50,14 @@
             border-top: none;
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
+        }
+
+        .katex-display {
+            display: block;
+            margin: 1em 0;
+            text-align: center;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
     </style>
 </head>
@@ -55,8 +75,6 @@
             const contentDiv = document.getElementById('content');
 
             // --- MARKED.JS EXTENSIONS ---
-
-            // 1. Расширение для подчеркнутого текста: ++текст++
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -65,47 +83,31 @@
                     const rule = /^\+\+([^\+\n]+)\+\+/;
                     const match = rule.exec(src);
                     if (match) {
-                        return {
-                            type: 'underline',
-                            raw: match[0],
-                            text: this.lexer.inlineTokens(match[1].trim()),
-                        };
+                        return { type: 'underline', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
                 },
-                renderer(token) {
-                    return `<u>${this.parser.parseInline(token.text)}</u>`;
-                }
+                renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
             };
             
-            // 2. Расширение для спойлеров: ||текст||
             const spoilerExtension = {
                 name: 'spoiler',
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    const rule = /^\|\|([^\|\n]+)\|\|/;
+                    // --- ОБНОВЛЕНО: Регулярное выражение стало более надежным ---
+                    const rule = /^\|\|(.*?)\|\|/s; 
                     const match = rule.exec(src);
                     if (match) {
-                        return {
-                            type: 'spoiler',
-                            raw: match[0],
-                            text: this.lexer.inlineTokens(match[1].trim()),
-                        };
+                        // match[1] содержит текст между ||...||
+                        return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
                 },
                 renderer(token) {
-                    return `
-                        <details>
-                            <summary>Спойлер</summary>
-                            <div class="spoiler-content">
-                                ${this.parser.parseInline(token.text)}
-                            </div>
-                        </details>`;
+                    return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`;
                 }
             };
 
             marked.use({ extensions: [underlineExtension, spoilerExtension] });
-
             // --- END OF EXTENSIONS ---
 
             function b64DecodeUnicode(str) {
@@ -131,7 +133,14 @@
                 
                 contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                 
-                renderMathInElement(contentDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+                });
+
                 document.querySelectorAll('pre code').forEach(hljs.highlightElement);
 
             } catch (e) {
