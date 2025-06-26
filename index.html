@@ -15,11 +15,30 @@
         :root {
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
+            --spoiler-bg: #3a3a3a;
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
         pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
         .error { color: #ff6b6b; border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; }
+
+        /* Стили для спойлера */
+        details { border-radius: 8px; margin: 1em 0; }
+        details > summary {
+            padding: 10px 15px;
+            background-color: var(--spoiler-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+        .spoiler-content {
+            padding: 15px;
+            border: 1px solid var(--spoiler-bg);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -35,8 +54,62 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
+            // --- MARKED.JS EXTENSIONS ---
+
+            // 1. Расширение для подчеркнутого текста: ++текст++
+            const underlineExtension = {
+                name: 'underline',
+                level: 'inline',
+                start(src) { return src.indexOf('++'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\+\+([^\+\n]+)\+\+/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'underline',
+                            raw: match[0],
+                            text: this.lexer.inlineTokens(match[1].trim()),
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `<u>${this.parser.parseInline(token.text)}</u>`;
+                }
+            };
+            
+            // 2. Расширение для спойлеров: ||текст||
+            const spoilerExtension = {
+                name: 'spoiler',
+                level: 'inline',
+                start(src) { return src.indexOf('||'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\|\|([^\|\n]+)\|\|/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'spoiler',
+                            raw: match[0],
+                            text: this.lexer.inlineTokens(match[1].trim()),
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `
+                        <details>
+                            <summary>Спойлер</summary>
+                            <div class="spoiler-content">
+                                ${this.parser.parseInline(token.text)}
+                            </div>
+                        </details>`;
+                }
+            };
+
+            marked.use({ extensions: [underlineExtension, spoilerExtension] });
+
+            // --- END OF EXTENSIONS ---
+
             function b64DecodeUnicode(str) {
-                const binaryString = atob(str.replace(/ /g, '+')); // Восстанавливаем '+' из пробелов, если нужно
+                const binaryString = atob(str.replace(/ /g, '+'));
                 const len = binaryString.length;
                 const bytes = new Uint8Array(len);
                 for (let i = 0; i < len; i++) {
@@ -53,7 +126,6 @@
                     throw new Error("Параметр 'data' не найден в URL.");
                 }
 
-                // Декодируем из URL, затем из Base64
                 const decodedData = decodeURIComponent(dataFromUrl);
                 const markdownText = b64DecodeUnicode(decodedData);
                 
