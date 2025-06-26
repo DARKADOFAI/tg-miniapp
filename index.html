@@ -15,9 +15,6 @@
         :root {
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
-            --tg-hint: var(--tg-theme-hint-color, #a0a0a0);
-            --tg-link: var(--tg-theme-link-color, #58a6ff);
-            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #1f1f1f);
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
@@ -26,7 +23,7 @@
     </style>
 </head>
 <body>
-    <div id="content"><p>⏳ Получаю ответ с сервера...</p></div>
+    <div id="content"><p>⏳ Загрузка ответа...</p></div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -34,41 +31,39 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
+            function b64DecodeUnicode(str) {
+                const binaryString = atob(str.replace(/ /g, '+')); // Восстанавливаем '+' из пробелов, если нужно
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
+            }
+
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const responseId = urlParams.get('response_id');
-                const apiUrl = urlParams.get('api_url') ? decodeURIComponent(urlParams.get('api_url')) : null;
+                const dataFromUrl = urlParams.get('data');
 
-                if (!responseId || !apiUrl) {
-                    throw new Error("ID ответа или URL API не найдены в ссылке. Это ошибка конфигурации бота.");
+                if (!dataFromUrl) {
+                    throw new Error("Параметр 'data' не найден в URL.");
                 }
 
-                const fetchUrl = `${apiUrl}/response/${responseId}`;
-                const serverResponse = await fetch(fetchUrl);
+                // Декодируем из URL, затем из Base64
+                const decodedData = decodeURIComponent(dataFromUrl);
+                const markdownText = b64DecodeUnicode(decodedData);
                 
-                if (!serverResponse.ok) {
-                    const errorData = await serverResponse.json().catch(() => ({ error: serverResponse.statusText }));
-                    throw new Error(`Ошибка сервера (${serverResponse.status}): ${errorData.error}`);
-                }
-
-                const data = await serverResponse.json();
-                const markdownText = data.text;
-
-                if (!markdownText) {
-                    throw new Error("Сервер вернул пустой ответ.");
-                }
-
                 contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                 
                 renderMathInElement(contentDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });
                 document.querySelectorAll('pre code').forEach(hljs.highlightElement);
 
             } catch (e) {
-                contentDiv.innerHTML = `<div class="error"><h3>Произошла ошибка</h3><p>${e.message}</p></div>`;
+                contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>${e.message}</p></div>`;
                 console.error("Ошибка Mini App:", e);
             }
 
