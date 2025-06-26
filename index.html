@@ -79,7 +79,7 @@
             // --- ОСНОВНАЯ ЛОГИКА: ЗАГРУЗКА ДАННЫХ С СЕРВЕРА ---
             async function fetchResponse() {
                 // --- ВАЖНО: ЗАМЕНИТЕ ЭТОТ URL НА ПУБЛИЧНЫЙ АДРЕС ВАШЕГО СЕРВЕРА ---
-                const backendUrl = 'https://77.110.126.145:8080/get_response'; 
+                const backendUrl = 'https://77.110.126.145:8081/get_response'; 
 
                 if (!Telegram.WebApp.initData) {
                      contentDiv.innerHTML = `<div class="error"><h3>Ошибка</h3><p>Не удалось получить данные для аутентификации (initData). Попробуйте перезапустить Mini App.</p></div>`;
