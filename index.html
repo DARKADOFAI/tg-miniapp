@@ -16,23 +16,26 @@
             --tg-bg: var(--tg-theme-bg-color, #121212);
             --tg-text: var(--tg-theme-text-color, #e0e0e0);
             --spoiler-bg: #3a3a3a;
-            --blockquote-bg: #202020;
-            --blockquote-border: #4a4a4a;
+            /* --- ОБНОВЛЕНО: Новые, более контрастные цвета для цитат --- */
+            --blockquote-bg: #2a2a2e;
+            --blockquote-border: #007bff; /* Яркий синий цвет */
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--tg-bg); color: var(--tg-text); padding: 20px 15px; margin: 0; line-height: 1.7; }
         #content { max-width: 800px; margin: 0 auto; }
         pre { background-color: #282c34; padding: 15px; border-radius: 8px; font-family: 'Fira Code', monospace; white-space: pre-wrap; word-wrap: break-word; }
         .error { color: #ff6b6b; border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; }
 
+        /* --- ОБНОВЛЕНО: Полностью переработанные стили для цитат --- */
         blockquote {
             background-color: var(--blockquote-bg);
-            border-left: 4px solid var(--blockquote-border);
-            padding: 10px 20px;
-            margin: 1.5em 10px;
-            color: #d0d0d0;
+            border-left: 5px solid var(--blockquote-border);
+            padding: 15px 20px;
+            margin: 1.5em 0;
+            color: #e5e5e5;
+            border-radius: 0 8px 8px 0;
         }
-        blockquote p {
-            margin: 0;
+        blockquote p:last-child {
+            margin-bottom: 0;
         }
 
         details { border-radius: 8px; margin: 1em 0; }
@@ -94,11 +97,9 @@
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    // --- ОБНОВЛЕНО: Регулярное выражение стало более надежным ---
                     const rule = /^\|\|(.*?)\|\|/s; 
                     const match = rule.exec(src);
                     if (match) {
-                        // match[1] содержит текст между ||...||
                         return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
                 },
