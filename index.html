@@ -5,126 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroSkull - Ответ</title>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code&display=swap" rel="stylesheet">
-    
-    <!-- KaTeX for Math -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     
-    <!-- Highlight.js Theme -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    
-    <script>
-        // Customizing Tailwind theme
-        tailwind.config = {
-            darkMode: 'media', // or 'class'
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace'],
-                    },
-                }
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        /* Ваши CSS-стили остаются без изменений */
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-link-color: #007aff;
+            --tg-theme-button-color: #007aff;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f2f2f7;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --tg-theme-bg-color: #1c1c1d;
+                --tg-theme-text-color: #ffffff;
+                --tg-theme-link-color: #0a84ff;
+                --tg-theme-button-color: #0a84ff;
+                --tg-theme-button-text-color: #ffffff;
+                --tg-theme-secondary-bg-color: #2c2c2e;
             }
         }
-    </script>
-    
-    <style>
-        /* Custom styles for a more polished look */
+
         body {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+            word-wrap: break-word;
         }
-
-        /* Styling for generated content */
-        #content h1 { @apply text-3xl font-bold mt-6 mb-4; }
-        #content h2 { @apply text-2xl font-bold mt-5 mb-3; }
-        #content h3 { @apply text-xl font-bold mt-4 mb-2; }
-        #content p { @apply mb-4 leading-relaxed; }
-        #content ul { @apply list-disc list-inside mb-4 pl-4; }
-        #content ol { @apply list-decimal list-inside mb-4 pl-4; }
-        #content a { @apply text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline; }
-        #content code:not(pre *) { @apply bg-gray-200 dark:bg-gray-700 font-mono text-sm rounded-md px-1.5 py-0.5; }
-        #content hr { @apply my-6 border-gray-200 dark:border-gray-700; }
-        #content table { @apply w-full border-collapse mb-4; }
-        #content th, #content td { @apply border border-gray-300 dark:border-gray-600 px-4 py-2 text-left; }
-        #content th { @apply bg-gray-100 dark:bg-gray-700 font-semibold; }
-
-        /* Blockquote styling */
-        #content blockquote {
-            @apply border-l-4 border-blue-500 pl-4 py-2 my-4 text-gray-600 dark:text-gray-400 italic;
+        #content {
+            font-size: 16px;
+            line-height: 1.6;
         }
-
-        /* Spoiler/Details styling */
-        #content details {
-            @apply bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-0 my-4 overflow-hidden;
-        }
-        #content summary {
-            @apply font-semibold p-4 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors;
-            outline: none;
-        }
-        #content .spoiler-content {
-            @apply p-4 border-t border-gray-200 dark:border-gray-700;
-        }
-
-        /* Preformatted text / Code blocks */
         pre {
-            @apply relative bg-gray-800 dark:bg-black/50 rounded-lg font-mono text-sm my-4;
+            position: relative;
+            background-color: var(--tg-theme-secondary-bg-color);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
         }
-        pre > code {
-            @apply p-4 block overflow-x-auto;
+        code {
+            font-family: 'Fira Code', monospace;
         }
         .hljs {
-           background: transparent !important;
+            background: none !important;
         }
-
-        /* Copy button for code blocks */
-        .copy-btn {
-            @apply absolute top-2 right-2 p-2 bg-gray-600 hover:bg-gray-500 rounded-md text-white transition-all;
-            opacity: 0;
-            visibility: hidden;
+        blockquote {
+            border-left: 3px solid var(--tg-theme-link-color);
+            margin-left: 0;
+            padding-left: 1em;
+            color: gray;
         }
-        pre:hover .copy-btn {
-            opacity: 1;
-            visibility: visible;
+        .error {
+            background-color: #ffdddd;
+            color: #d8000c;
+            border: 1px solid #d8000c;
+            padding: 15px;
+            border-radius: 8px;
         }
-        .copy-btn.copied {
-            @apply bg-green-600;
+        details {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: .5em .5em 0;
+            margin: 1em 0;
+        }
+        summary {
+            font-weight: bold;
+            margin: -.5em -.5em 0;
+            padding: .5em;
+            cursor: pointer;
+        }
+        details[open] {
+            padding: .5em;
+        }
+        details[open] summary {
+            border-bottom: 1px solid #ccc;
+            margin-bottom: .5em;
+        }
+        .spoiler-content {
+            margin-top: 1em;
         }
     </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans">
-    
-    <!-- Main container -->
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <main id="container" class="w-full max-w-4xl bg-white dark:bg-gray-800/50 dark:border dark:border-gray-700 rounded-xl shadow-lg p-6 md:p-8 transition-all duration-300">
-            <!-- Loader -->
-            <div id="loader">
-                <div class="flex flex-col items-center justify-center text-center">
-                    <svg class="animate-spin h-8 w-8 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p class="text-lg font-medium text-gray-700 dark:text-gray-300">Загрузка ответа...</p>
-                </div>
-            </div>
-            
-            <!-- Content will be injected here -->
-            <div id="content" class="prose dark:prose-invert max-w-none hidden"></div>
-        </main>
-        <footer class="text-center mt-4">
-            <p class="text-xs text-gray-400 dark:text-gray-500">Powered by NeuroSkull</p>
-        </footer>
-    </div>
+<body>
+    <div id="content"><p>⏳ Загрузка ответа...</p></div>
 
-    <!-- Scripts -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -133,13 +110,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-
-            const loader = document.getElementById('loader');
             const contentDiv = document.getElementById('content');
-            const container = document.getElementById('container');
 
-            // --- Configure Marked.js ---
+            // Расширения для Marked.js (без изменений)
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -163,79 +136,12 @@
                 renderer(token) { return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`; }
             };
             marked.use({ extensions: [underlineExtension, spoilerExtension] });
-            
-            function addCopyButtons() {
-                const codeBlocks = document.querySelectorAll('pre');
-                codeBlocks.forEach(block => {
-                    const code = block.querySelector('code');
-                    if (!code) return;
 
-                    const btn = document.createElement('button');
-                    btn.className = 'copy-btn';
-                    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zM-1 7a.5.5 0 0 1 .5-.5h15a.5.5 0 0 1 0 1h-15A.5.5 0 0 1-1 7z"/></svg>`;
-                    
-                    btn.addEventListener('click', () => {
-                        const codeText = code.innerText;
-                        
-                        // Using a temporary textarea to copy text for compatibility
-                        const textArea = document.createElement('textarea');
-                        textArea.value = codeText;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        try {
-                            document.execCommand('copy');
-                            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/></svg>`;
-                            btn.classList.add('copied');
-                            setTimeout(() => {
-                                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zM-1 7a.5.5 0 0 1 .5-.5h15a.5.5 0 0 1 0 1h-15A.5.5 0 0 1-1 7z"/></svg>`;
-                                btn.classList.remove('copied');
-                            }, 2000);
-                        } catch (err) {
-                            console.error('Failed to copy text: ', err);
-                        }
-                        document.body.removeChild(textArea);
-                    });
-                    
-                    block.appendChild(btn);
-                });
-            }
-
-            function renderContent(markdownText) {
-                // Render the Markdown to HTML
-                contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
-                
-                // Render math formulas
-                renderMathInElement(contentDiv, {
-                    delimiters: [
-                        {left: '$$', right: '$$', display: true},
-                        {left: '$', right: '$', display: false}
-                    ],
-                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
-                });
-
-                // Apply syntax highlighting to code blocks
-                document.querySelectorAll('pre code').forEach(hljs.highlightElement);
-
-                // Add copy buttons to code blocks
-                addCopyButtons();
-
-                // Show content and hide loader
-                loader.classList.add('hidden');
-                contentDiv.classList.remove('hidden');
-            }
-
-            function displayError(e) {
-                container.innerHTML = `<div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative" role="alert">
-                    <strong class="font-bold">Ошибка обработки данных!</strong>
-                    <span class="block sm:inline">${e.message}</span>
-                </div>`;
-                console.error("Ошибка Mini App:", e);
-            }
-
-            // --- Main logic: get and process data ---
+            // --- ИЗМЕНЕНИЕ НАЧАЛО: Обновленная логика получения и обработки данных ---
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dataFromUrl = urlParams.get('data');
+                // Проверяем, есть ли флаг сжатия
                 const isCompressed = urlParams.get('compressed') === 'true';
 
                 if (!dataFromUrl) {
@@ -243,17 +149,24 @@
                 }
                 
                 let markdownText;
+                
+                // Декодируем из URL-безопасного формата
                 const decodedData = decodeURIComponent(dataFromUrl);
 
                 if (isCompressed) {
+                    // ЕСЛИ ДАННЫЕ СЖАТЫ:
+                    // 1. Декодируем из Base64 в бинарную строку
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
+                    // 2. Распаковываем байты с помощью pako в строку UTF-8
                     markdownText = pako.inflate(bytes, { to: 'string' });
                 } else {
+                    // ЕСЛИ ДАННЫЕ НЕ СЖАТЫ (для обратной совместимости):
+                    // Просто декодируем из Base64
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
@@ -263,11 +176,28 @@
                     markdownText = new TextDecoder().decode(bytes);
                 }
                 
-                renderContent(markdownText);
+                // Рендерим полученный Markdown
+                contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
+                
+                // Применяем рендеринг математических формул
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+                });
+
+                // Применяем подсветку синтаксиса
+                document.querySelectorAll('pre code').forEach(hljs.highlightElement);
 
             } catch (e) {
-                displayError(e);
+                contentDiv.innerHTML = `<div class="error"><h3>Ошибка обработки данных</h3><p>${e.message}</p></div>`;
+                console.error("Ошибка Mini App:", e);
             }
+            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+
+            Telegram.WebApp.expand();
         });
     </script>
 </body>
