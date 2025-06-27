@@ -63,16 +63,13 @@
             background: none !important;
         }
 
-        /* --- ИЗМЕНЕНИЕ CSS ЦИТАТЫ НАЧАЛО --- */
         blockquote {
             background-color: var(--tg-theme-secondary-bg-color);
             border-left: 4px solid var(--tg-theme-link-color);
             margin: 1em 0;
             padding: 0.5em 1em;
             border-radius: 4px;
-            /* Цвет текста наследуется от body, что обеспечивает хороший контраст */
         }
-        /* --- ИЗМЕНЕНИЕ CSS ЦИТАТЫ КОНЕЦ --- */
 
         .error {
             background-color: #ffdddd;
@@ -82,32 +79,46 @@
             border-radius: 8px;
         }
         
+        /* --- ИЗМЕНЕНИЕ CSS СПОЙЛЕРА НАЧАЛО --- */
         details {
-            display: inline-block; /* FIX: Позволяет спойлеру быть в строке с текстом */
-            vertical-align: middle; /* Улучшает выравнивание по вертикали */
-            border: 1px solid #ccc;
+            display: inline-block;
+            vertical-align: baseline;
             border-radius: 4px;
-            padding: .2em .2em 0;
-            margin: 0 .1em;
+            padding: 0.1em 0.4em 0.2em;
+            margin: 0 0.1em;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border: 1px solid transparent;
         }
         summary {
-            font-weight: bold;
-            margin: -.2em -.2em 0; /* Корректировка для нового padding */
-            padding: .2em .5em;
+            font-weight: normal;
+            font-size: 0.95em;
+            margin: 0;
+            padding: 0;
             cursor: pointer;
             display: inline-block;
+            outline: none;
+            color: var(--tg-theme-link-color);
         }
         details[open] {
-            padding: .5em;
+            display: block;
+            margin: 1em 0;
+            padding: 0.8em 1em;
+            border: 1px solid #ccc;
         }
         details[open] summary {
+            font-size: 1em;
+            font-weight: bold;
+            color: var(--tg-theme-text-color);
             border-bottom: 1px solid #ccc;
-            margin-bottom: .5em;
+            margin-bottom: 0.8em;
+            padding-bottom: 0.8em;
         }
 
         .spoiler-content {
-            margin-top: 1em;
+            margin-top: 0; /* Убираем лишний отступ */
         }
+        /* --- ИЗМЕНЕНИЕ CSS СПОЙЛЕРА КОНЕЦ --- */
+
     </style>
 </head>
 <body>
