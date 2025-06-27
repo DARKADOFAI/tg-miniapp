@@ -14,7 +14,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
-        /* Ваши CSS-стили остаются без изменений */
+        /* CSS-стили остаются без изменений */
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
@@ -112,7 +112,46 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // Расширения для Marked.js (без изменений)
+            // --- ИЗМЕНЕНИЕ НАЧАЛО: Обновленные расширения для Marked.js ---
+
+            // Расширение для блочных формул KaTeX
+            const katexBlockExtension = {
+                name: 'katexBlock',
+                level: 'block',
+                start(src) { return src.indexOf('$$'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\$\$([\s\S]+?)\$\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'katexBlock', raw: match[0], text: match[1].trim() };
+                    }
+                },
+                renderer(token) {
+                    // Возвращаем блок как есть, чтобы KaTeX мог его обработать.
+                    // Оборачиваем в <p> для правильного блочного отображения.
+                    return `<p>${token.raw}</p>`;
+                }
+            };
+
+            // Расширение для инлайн-формул KaTeX
+            const katexInlineExtension = {
+                name: 'katexInline',
+                level: 'inline',
+                start(src) { return src.indexOf('$'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\$([^\$\n]+?)\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'katexInline', raw: match[0], text: match[1].trim() };
+                    }
+                },
+                renderer(token) {
+                    // Возвращаем как есть для KaTeX auto-renderer
+                    return token.raw;
+                }
+            };
+
+            // Расширение для подчеркнутого текста
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -124,24 +163,39 @@
                 },
                 renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
             };
+            
+            // ИСПРАВЛЕННОЕ расширение для спойлеров
             const spoilerExtension = {
                 name: 'spoiler',
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    const rule = /^\|\|([^\|\n]+)\|\|/;
+                    // Нежадный (non-greedy) regex, чтобы захватить все до следующего '||'
+                    const rule = /^\|\|([\s\S]+?)\|\|/;
                     const match = rule.exec(src);
-                    if (match) { return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) }; }
+                    if (match) {
+                        return {
+                            type: 'spoiler',
+                            raw: match[0],
+                            // НЕ используем .trim(), чтобы сохранить знаки препинания
+                            text: this.lexer.inlineTokens(match[1])
+                        };
+                    }
                 },
                 renderer(token) { return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`; }
             };
-            marked.use({ extensions: [underlineExtension, spoilerExtension] });
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО: Обновленная логика получения и обработки данных ---
+            // Регистрируем все расширения. Порядок важен.
+            marked.use({
+                extensions: [katexBlockExtension, katexInlineExtension, underlineExtension, spoilerExtension]
+            });
+            
+            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+
+
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dataFromUrl = urlParams.get('data');
-                // Проверяем, есть ли флаг сжатия
                 const isCompressed = urlParams.get('compressed') === 'true';
 
                 if (!dataFromUrl) {
@@ -150,23 +204,17 @@
                 
                 let markdownText;
                 
-                // Декодируем из URL-безопасного формата
                 const decodedData = decodeURIComponent(dataFromUrl);
 
                 if (isCompressed) {
-                    // ЕСЛИ ДАННЫЕ СЖАТЫ:
-                    // 1. Декодируем из Base64 в бинарную строку
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
-                    // 2. Распаковываем байты с помощью pako в строку UTF-8
                     markdownText = pako.inflate(bytes, { to: 'string' });
                 } else {
-                    // ЕСЛИ ДАННЫЕ НЕ СЖАТЫ (для обратной совместимости):
-                    // Просто декодируем из Base64
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
@@ -185,6 +233,7 @@
                         {left: '$$', right: '$$', display: true},
                         {left: '$', right: '$', display: false}
                     ],
+                    // Игнорируем теги, где KaTeX не должен работать
                     ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
                 });
 
@@ -195,7 +244,6 @@
                 contentDiv.innerHTML = `<div class="error"><h3>Ошибка обработки данных</h3><p>${e.message}</p></div>`;
                 console.error("Ошибка Mini App:", e);
             }
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
             Telegram.WebApp.expand();
         });
