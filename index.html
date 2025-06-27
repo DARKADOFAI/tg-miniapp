@@ -14,7 +14,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
-        /* CSS-стили остаются без изменений */
+        /* CSS-стили */
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
@@ -62,12 +62,18 @@
         .hljs {
             background: none !important;
         }
+
+        /* --- ИЗМЕНЕНИЕ CSS ЦИТАТЫ НАЧАЛО --- */
         blockquote {
-            border-left: 3px solid var(--tg-theme-link-color);
-            margin-left: 0;
-            padding-left: 1em;
-            color: gray;
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-left: 4px solid var(--tg-theme-link-color);
+            margin: 1em 0;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            /* Цвет текста наследуется от body, что обеспечивает хороший контраст */
         }
+        /* --- ИЗМЕНЕНИЕ CSS ЦИТАТЫ КОНЕЦ --- */
+
         .error {
             background-color: #ffdddd;
             color: #d8000c;
@@ -76,7 +82,6 @@
             border-radius: 8px;
         }
         
-        /* --- ИЗМЕНЕНИЕ CSS НАЧАЛО --- */
         details {
             display: inline-block; /* FIX: Позволяет спойлеру быть в строке с текстом */
             vertical-align: middle; /* Улучшает выравнивание по вертикали */
@@ -99,7 +104,6 @@
             border-bottom: 1px solid #ccc;
             margin-bottom: .5em;
         }
-        /* --- ИЗМЕНЕНИЕ CSS КОНЕЦ --- */
 
         .spoiler-content {
             margin-top: 1em;
