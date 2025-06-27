@@ -14,7 +14,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
-        /* Ваши CSS-стили остаются без изменений */
+        /* CSS-переменные для поддержки темной и светлой тем Telegram */
         :root {
             --tg-theme-bg-color: #ffffff;
             --tg-theme-text-color: #000000;
@@ -22,6 +22,11 @@
             --tg-theme-button-color: #007aff;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #f2f2f7;
+
+            --custom-quote-bg-color: #f9f9f9;
+            --custom-quote-border-color: #007aff;
+            --custom-details-border-color: #e0e0e0;
+            --custom-details-bg-color: #f9f9f9;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -32,6 +37,11 @@
                 --tg-theme-button-color: #0a84ff;
                 --tg-theme-button-text-color: #ffffff;
                 --tg-theme-secondary-bg-color: #2c2c2e;
+
+                --custom-quote-bg-color: #2a2a2c;
+                --custom-quote-border-color: #0a84ff;
+                --custom-details-border-color: #38383a;
+                --custom-details-bg-color: #2a2a2c;
             }
         }
 
@@ -56,17 +66,15 @@
             overflow-x: auto;
             font-family: 'Fira Code', monospace;
         }
-        code {
+        code:not(pre > code) {
             font-family: 'Fira Code', monospace;
+            background-color: var(--tg-theme-secondary-bg-color);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
         }
         .hljs {
             background: none !important;
-        }
-        blockquote {
-            border-left: 3px solid var(--tg-theme-link-color);
-            margin-left: 0;
-            padding-left: 1em;
-            color: gray;
         }
         .error {
             background-color: #ffdddd;
@@ -75,28 +83,57 @@
             padding: 15px;
             border-radius: 8px;
         }
+        
+        /* --- НОВЫЕ СТИЛИ ДЛЯ ЦИТАТ --- */
+        blockquote {
+            background-color: var(--custom-quote-bg-color);
+            border-left: 5px solid var(--custom-quote-border-color);
+            margin: 1.5em 0;
+            padding: 1em 1.5em;
+            color: var(--tg-theme-text-color);
+            border-radius: 0 8px 8px 0;
+        }
+        blockquote p:first-child {
+            margin-top: 0;
+        }
+        blockquote p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* --- НОВЫЕ СТИЛИ ДЛЯ СПОЙЛЕРОВ (details) --- */
         details {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: .5em .5em 0;
+            background-color: var(--custom-details-bg-color);
+            border: 1px solid var(--custom-details-border-color);
+            border-radius: 8px;
+            padding: 0.5em 1em;
             margin: 1em 0;
+            transition: all 0.3s ease;
+        }
+        details[open] {
+            padding-bottom: 1em;
         }
         summary {
             font-weight: bold;
-            margin: -.5em -.5em 0;
-            padding: .5em;
             cursor: pointer;
+            padding: 0.5em 0;
+            list-style-position: inside;
         }
-        details[open] {
-            padding: .5em;
-        }
-        details[open] summary {
-            border-bottom: 1px solid #ccc;
-            margin-bottom: .5em;
+        summary::marker {
+            color: var(--tg-theme-link-color);
         }
         .spoiler-content {
-            margin-top: 1em;
+            margin-top: 0.5em;
+            padding-top: 1em;
+            border-top: 1px solid var(--custom-details-border-color);
         }
+
+        /* --- СТИЛИ ДЛЯ КОРРЕКТНОГО ОТОБРАЖЕНИЯ ФОРМУЛ --- */
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 1em 0;
+        }
+
     </style>
 </head>
 <body>
@@ -105,14 +142,81 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- УДАЛЕН auto-render.min.js, так как рендеринг формул теперь делается вручную -->
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // Расширения для Marked.js (без изменений)
+            // --- ИЗМЕНЕНИЕ: Добавлены расширения для LaTeX ---
+            const katexBlockExtension = {
+                name: 'katexBlock',
+                level: 'block',
+                start(src) { return src.indexOf('$$'); },
+                tokenizer(src, tokens) {
+                    const rule = /^\$\$([\s\S]+?)\$\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'katexBlock', raw: match[0], text: match[1].trim() };
+                    }
+                },
+                renderer(token) {
+                    try {
+                        return `<div class="katex-display">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</div>`;
+                    } catch (e) {
+                        return `<pre class="katex-error">${e.message}</pre>`;
+                    }
+                }
+            };
+
+            const katexInlineExtension = {
+                name: 'katexInline',
+                level: 'inline',
+                start(src) { return src.indexOf('$'); },
+                tokenizer(src, tokens) {
+                    // Убедимся, что это не $$ и что есть закрывающий $
+                    if (src.startsWith('$$') || !src.slice(1).includes('$')) {
+                        return;
+                    }
+                    const rule = /^\$([^\$\n]+?)\$/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return { type: 'katexInline', raw: match[0], text: match[1].trim() };
+                    }
+                },
+                renderer(token) {
+                    try {
+                        return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+                    } catch (e) {
+                        return `<code>${e.message}</code>`;
+                    }
+                }
+            };
+            
+            // --- ИЗМЕНЕНИЕ: Улучшенное расширение для спойлеров ---
+            const spoilerExtension = {
+                name: 'spoiler',
+                level: 'inline',
+                start(src) { return src.indexOf('||'); },
+                tokenizer(src, tokens) {
+                    // Этот regex более надежен и корректно обрабатывает вложенный контент,
+                    // решая проблему со знаками препинания, которые "вылетали".
+                    const rule = /^\|\|((?:(?!\|\|).)+)\|\|/;
+                    const match = rule.exec(src);
+                    if (match) { 
+                        return { 
+                            type: 'spoiler', 
+                            raw: match[0], 
+                            text: this.lexer.inlineTokens(match[1].trim()) 
+                        }; 
+                    }
+                },
+                renderer(token) { 
+                    return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`; 
+                }
+            };
+
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -124,24 +228,13 @@
                 },
                 renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
             };
-            const spoilerExtension = {
-                name: 'spoiler',
-                level: 'inline',
-                start(src) { return src.indexOf('||'); },
-                tokenizer(src, tokens) {
-                    const rule = /^\|\|([^\|\n]+)\|\|/;
-                    const match = rule.exec(src);
-                    if (match) { return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) }; }
-                },
-                renderer(token) { return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`; }
-            };
-            marked.use({ extensions: [underlineExtension, spoilerExtension] });
+            
+            // --- ИЗМЕНЕНИЕ: Добавляем все расширения, включая LaTeX ---
+            marked.use({ extensions: [underlineExtension, spoilerExtension, katexBlockExtension, katexInlineExtension] });
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО: Обновленная логика получения и обработки данных ---
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dataFromUrl = urlParams.get('data');
-                // Проверяем, есть ли флаг сжатия
                 const isCompressed = urlParams.get('compressed') === 'true';
 
                 if (!dataFromUrl) {
@@ -149,24 +242,17 @@
                 }
                 
                 let markdownText;
-                
-                // Декодируем из URL-безопасного формата
                 const decodedData = decodeURIComponent(dataFromUrl);
 
                 if (isCompressed) {
-                    // ЕСЛИ ДАННЫЕ СЖАТЫ:
-                    // 1. Декодируем из Base64 в бинарную строку
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
-                    // 2. Распаковываем байты с помощью pako в строку UTF-8
                     markdownText = pako.inflate(bytes, { to: 'string' });
                 } else {
-                    // ЕСЛИ ДАННЫЕ НЕ СЖАТЫ (для обратной совместимости):
-                    // Просто декодируем из Base64
                     const binaryString = atob(decodedData.replace(/ /g, '+'));
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
@@ -176,17 +262,10 @@
                     markdownText = new TextDecoder().decode(bytes);
                 }
                 
-                // Рендерим полученный Markdown
+                // Рендерим Markdown. Теперь он сам处理вает формулы.
                 contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                 
-                // Применяем рендеринг математических формул
-                renderMathInElement(contentDiv, {
-                    delimiters: [
-                        {left: '$$', right: '$$', display: true},
-                        {left: '$', right: '$', display: false}
-                    ],
-                    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
-                });
+                // --- УДАЛЕНО: Вызов renderMathInElement больше не нужен ---
 
                 // Применяем подсветку синтаксиса
                 document.querySelectorAll('pre code').forEach(hljs.highlightElement);
@@ -195,7 +274,6 @@
                 contentDiv.innerHTML = `<div class="error"><h3>Ошибка обработки данных</h3><p>${e.message}</p></div>`;
                 console.error("Ошибка Mini App:", e);
             }
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
             Telegram.WebApp.expand();
         });
