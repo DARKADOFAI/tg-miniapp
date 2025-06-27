@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
         :root {
             --tg-bg: var(--tg-theme-bg-color, #121212);
@@ -62,7 +63,7 @@
             overflow-x: auto; /* Для обработки очень длинных формул */
             overflow-y: hidden;
         }
-    </style>
+        </style>
 </head>
 <body>
     <div id="content"><p>⏳ Загрузка ответа...</p></div>
@@ -77,7 +78,7 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // --- MARKED.JS EXTENSIONS ---
+            // --- MARKED.JS EXTENSIONS (без изменений) ---
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -97,11 +98,10 @@
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    const rule = /^\|\|([^\|\n]+?)\|\|/;
+                    const rule = /^\|\|([^\|\n]+)\|\|/;
                     const match = rule.exec(src);
                     if (match) {
-                        // ИСПРАВЛЕНИЕ: Убрано .trim() чтобы не обрезать знаки препинания
-                        return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1]) };
+                        return { type: 'spoiler', raw: match[0], text: this.lexer.inlineTokens(match[1].trim()) };
                     }
                 },
                 renderer(token) {
@@ -109,51 +109,25 @@
                 }
             };
 
-            // ИСПРАВЛЕНИЕ: Добавлены расширения для LaTeX, чтобы Marked.js их не трогал
-            const blockMathExtension = {
-                name: 'blockMath',
-                level: 'block',
-                start(src) { return src.indexOf('$$'); },
-                tokenizer(src) {
-                    const rule = /^\$\$([\s\S]+?)\$\$/;
-                    const match = rule.exec(src);
-                    if (match) {
-                        return {
-                            type: 'blockMath',
-                            raw: match[0],
-                            text: match[1].trim()
-                        };
-                    }
-                },
-                renderer(token) {
-                    return `$$${token.text}$$`;
-                }
-            };
-
-            const inlineMathExtension = {
-                name: 'inlineMath',
-                level: 'inline',
-                start(src) { return src.indexOf('$'); },
-                tokenizer(src) {
-                    // Строгая проверка, чтобы избежать ложных срабатываний на обычный текст с долларами
-                    const rule = /^\$((?:\\.|[^$])+)\$/;
-                    const match = rule.exec(src);
-                    if (match) {
-                        return {
-                            type: 'inlineMath',
-                            raw: match[0],
-                            text: match[1].trim()
-                        };
-                    }
-                },
-                renderer(token) {
-                    return `$${token.text}$`;
-                }
-            };
-
-            marked.use({ extensions: [underlineExtension, spoilerExtension, blockMathExtension, inlineMathExtension] });
+            marked.use({ extensions: [underlineExtension, spoilerExtension] });
             // --- END OF EXTENSIONS ---
 
+            // ИЗМЕНЕНИЕ: Новая функция для декодирования и распаковки
+            function decompressData(base64String) {
+                // 1. Декодируем из Base64 в бинарную строку
+                const binaryString = atob(base64String.replace(/ /g, '+'));
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // 2. Распаковываем с помощью pako
+                const decompressed = pako.inflate(bytes, { to: 'string' });
+                return decompressed;
+            }
+
+            // Старая функция для обратной совместимости (если вдруг придут несжатые данные)
             function b64DecodeUnicode(str) {
                 const binaryString = atob(str.replace(/ /g, '+'));
                 const len = binaryString.length;
@@ -167,23 +141,30 @@
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dataFromUrl = urlParams.get('data');
+                const isCompressed = urlParams.get('compressed') === 'true';
 
                 if (!dataFromUrl) {
                     throw new Error("Параметр 'data' не найден в URL.");
                 }
 
+                let markdownText;
                 const decodedData = decodeURIComponent(dataFromUrl);
-                const markdownText = b64DecodeUnicode(decodedData);
+
+                if (isCompressed) {
+                    // Используем новую функцию, если данные сжаты
+                    markdownText = decompressData(decodedData);
+                } else {
+                    // Оставляем старую логику для обратной совместимости
+                    markdownText = b64DecodeUnicode(decodedData);
+                }
                 
                 contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                 
-                // ОБНОВЛЕНО: Добавлены ignoredTags для лучшей обработки
                 renderMathInElement(contentDiv, {
                     delimiters: [
                         {left: '$$', right: '$$', display: true},
                         {left: '$', right: '$', display: false}
                     ],
-                    // Добавляем pre и code, чтобы KaTeX не пытался рендерить формулы внутри блоков кода
                     ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
                 });
 
