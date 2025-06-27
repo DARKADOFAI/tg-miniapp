@@ -75,17 +75,22 @@
             padding: 15px;
             border-radius: 8px;
         }
+        
+        /* --- ИЗМЕНЕНИЕ CSS НАЧАЛО --- */
         details {
+            display: inline-block; /* FIX: Позволяет спойлеру быть в строке с текстом */
+            vertical-align: middle; /* Улучшает выравнивание по вертикали */
             border: 1px solid #ccc;
             border-radius: 4px;
-            padding: .5em .5em 0;
-            margin: 1em 0;
+            padding: .2em .2em 0;
+            margin: 0 .1em;
         }
         summary {
             font-weight: bold;
-            margin: -.5em -.5em 0;
-            padding: .5em;
+            margin: -.2em -.2em 0; /* Корректировка для нового padding */
+            padding: .2em .5em;
             cursor: pointer;
+            display: inline-block;
         }
         details[open] {
             padding: .5em;
@@ -94,6 +99,8 @@
             border-bottom: 1px solid #ccc;
             margin-bottom: .5em;
         }
+        /* --- ИЗМЕНЕНИЕ CSS КОНЕЦ --- */
+
         .spoiler-content {
             margin-top: 1em;
         }
@@ -112,9 +119,8 @@
             Telegram.WebApp.ready();
             const contentDiv = document.getElementById('content');
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО: Обновленные расширения для Marked.js ---
+            // --- Расширения для Marked.js (без изменений) ---
 
-            // Расширение для блочных формул KaTeX
             const katexBlockExtension = {
                 name: 'katexBlock',
                 level: 'block',
@@ -127,13 +133,10 @@
                     }
                 },
                 renderer(token) {
-                    // Возвращаем блок как есть, чтобы KaTeX мог его обработать.
-                    // Оборачиваем в <p> для правильного блочного отображения.
                     return `<p>${token.raw}</p>`;
                 }
             };
 
-            // Расширение для инлайн-формул KaTeX
             const katexInlineExtension = {
                 name: 'katexInline',
                 level: 'inline',
@@ -146,12 +149,10 @@
                     }
                 },
                 renderer(token) {
-                    // Возвращаем как есть для KaTeX auto-renderer
                     return token.raw;
                 }
             };
 
-            // Расширение для подчеркнутого текста
             const underlineExtension = {
                 name: 'underline',
                 level: 'inline',
@@ -164,20 +165,17 @@
                 renderer(token) { return `<u>${this.parser.parseInline(token.text)}</u>`; }
             };
             
-            // ИСПРАВЛЕННОЕ расширение для спойлеров
             const spoilerExtension = {
                 name: 'spoiler',
                 level: 'inline',
                 start(src) { return src.indexOf('||'); },
                 tokenizer(src, tokens) {
-                    // Нежадный (non-greedy) regex, чтобы захватить все до следующего '||'
                     const rule = /^\|\|([\s\S]+?)\|\|/;
                     const match = rule.exec(src);
                     if (match) {
                         return {
                             type: 'spoiler',
                             raw: match[0],
-                            // НЕ используем .trim(), чтобы сохранить знаки препинания
                             text: this.lexer.inlineTokens(match[1])
                         };
                     }
@@ -185,14 +183,10 @@
                 renderer(token) { return `<details><summary>Спойлер</summary><div class="spoiler-content">${this.parser.parseInline(token.text)}</div></details>`; }
             };
 
-            // Регистрируем все расширения. Порядок важен.
             marked.use({
                 extensions: [katexBlockExtension, katexInlineExtension, underlineExtension, spoilerExtension]
             });
             
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
-
-
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const dataFromUrl = urlParams.get('data');
@@ -224,20 +218,16 @@
                     markdownText = new TextDecoder().decode(bytes);
                 }
                 
-                // Рендерим полученный Markdown
                 contentDiv.innerHTML = marked.parse(markdownText, { gfm: true, breaks: true });
                 
-                // Применяем рендеринг математических формул
                 renderMathInElement(contentDiv, {
                     delimiters: [
                         {left: '$$', right: '$$', display: true},
                         {left: '$', right: '$', display: false}
                     ],
-                    // Игнорируем теги, где KaTeX не должен работать
                     ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"]
                 });
 
-                // Применяем подсветку синтаксиса
                 document.querySelectorAll('pre code').forEach(hljs.highlightElement);
 
             } catch (e) {
